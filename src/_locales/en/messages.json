@@ -275,6 +275,42 @@
         "message": "Add Webhook",
         "description": "Button label"
     },
+    "accountsMalojaEndpointHelp": {
+        "message": "Enter the full scrobble endpoint for each account, including /apis/mlj_1/newscrobble.",
+        "description": "Maloja account settings"
+    },
+    "accountsMalojaApiKey": {
+        "message": "API key",
+        "description": "Maloja account settings"
+    },
+    "accountsMalojaPending": {
+        "message": "Pending deliveries: $1",
+        "description": "Maloja account settings"
+    },
+    "accountsMalojaSave": {
+        "message": "Save account",
+        "description": "Maloja account settings"
+    },
+    "accountsMalojaAdd": {
+        "message": "Add Maloja account",
+        "description": "Maloja account settings"
+    },
+    "accountsMalojaRemove": {
+        "message": "Remove account",
+        "description": "Maloja account settings"
+    },
+    "accountsMalojaDiscardPending": {
+        "message": "Discard this account’s pending deliveries?",
+        "description": "Maloja account settings"
+    },
+    "accountsMalojaSaveError": {
+        "message": "Could not save the change. Use a valid HTTP or HTTPS API URL and a non-empty API key, and check for duplicate accounts.",
+        "description": "Maloja account settings"
+    },
+    "accountsMalojaLoadError": {
+        "message": "Could not load Maloja accounts.",
+        "description": "Maloja account settings"
+    },
     "optionsOptions": {
         "message": "Options",
         "description": "'Options' section"

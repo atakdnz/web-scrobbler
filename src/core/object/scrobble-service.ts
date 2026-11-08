@@ -73,6 +73,12 @@ class ScrobbleService {
 				await scrobbler.getSession();
 				this.bindScrobbler(scrobbler);
 			} catch {
+				if (
+					scrobbler instanceof MalojaScrobbler &&
+					this.boundScrobblers.includes(scrobbler)
+				) {
+					this.unbindScrobbler(scrobbler);
+				}
 				debugLog(`Unable to bind ${scrobbler.getLabel()}`, 'warn');
 			}
 		}
@@ -249,7 +255,7 @@ class ScrobbleService {
 				}
 			}),
 		);
-		for (let i = 0; i < res[0].length; i++) {
+		for (let i = 0; i < (res[0]?.length ?? 0); i++) {
 			await scrobbleCache.pushScrobble({
 				song: songs[i].getCloneableData(),
 				status: getScrobbleStatus(res, i),

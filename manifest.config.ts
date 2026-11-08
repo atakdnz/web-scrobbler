@@ -12,7 +12,13 @@ export const common: Manifest.WebExtensionManifest = {
 	description: '__MSG_extDescription__',
 	version: pkg.version,
 
-	permissions: ['storage', 'contextMenus', 'notifications', 'scripting'],
+	permissions: [
+		'storage',
+		'contextMenus',
+		'notifications',
+		'scripting',
+		'alarms',
+	],
 	optional_host_permissions: ['http://*/', 'https://*/'],
 
 	content_scripts: [

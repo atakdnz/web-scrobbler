@@ -28,6 +28,10 @@ import type { CloneableSong } from '@/core/object/song';
 import EventEmitter from '@/util/emitter';
 import type connectors from '@/core/connectors';
 import type { RegexEdit } from '@/util/regex';
+import type {
+	MalojaAccount,
+	MalojaDelivery,
+} from '@/core/scrobbler/maloja/maloja.types';
 import { ServiceCallResult } from '../object/service-call-result';
 import { debugLog } from '../util/debug';
 
@@ -73,7 +77,10 @@ export interface ScrobblerModels {
 	LastFM?: { token?: string } | { sessionID?: string; sessionName?: string };
 	LibreFM?: { token?: string } | { sessionID?: string; sessionName?: string };
 	ListenBrainz?: ListenBrainzModel;
-	Maloja?: Properties;
+	Maloja?: Properties & {
+		accounts?: MalojaAccount[];
+		pending?: MalojaDelivery[];
+	};
 	Webhook?: WebhookModel;
 	Pleroma?: Properties;
 }

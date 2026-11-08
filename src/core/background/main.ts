@@ -49,6 +49,26 @@ import {
 import scrobbleService from '../object/scrobble-service';
 import { fetchListenBrainzProfile } from '@/util/util';
 
+import MalojaScrobbler, {
+	MALOJA_RETRY_ALARM,
+} from '@/core/scrobbler/maloja/maloja-scrobbler';
+
+const maloja = scrobbleService.getScrobblerByLabel('Maloja');
+
+function retryMaloja() {
+	if (maloja instanceof MalojaScrobbler) {
+		void maloja
+			.retryPending()
+			.catch(() => console.warn('Unable to retry Maloja deliveries'));
+	}
+}
+
+browser.alarms.onAlarm.addListener(({ name }) => {
+	if (name === MALOJA_RETRY_ALARM) {
+		retryMaloja();
+	}
+});
+
 const disabledTabs = BrowserStorage.getStorage(BrowserStorage.DISABLED_TABS);
 
 async function updateTabsFromTabList(tabs: ManagerTab[], tabId?: number) {
@@ -315,6 +335,25 @@ async function updateState(
 
 // Set up listeners for messages from content scripts and popup/settings script. Must be set synchronously on first script run.
 setupBackgroundListeners(
+	backgroundListener({
+		type: 'changeMalojaAccount',
+		fn: async (change, sender) => {
+			const optionsPage = browser.runtime.getManifest().options_ui?.page;
+			if (
+				!optionsPage ||
+				sender.url?.split(/[?#]/)[0] !==
+					browser.runtime.getURL(optionsPage)
+			) {
+				throw new Error(
+					'Maloja settings must be changed from the options page',
+				);
+			}
+			if (maloja instanceof MalojaScrobbler) {
+				await maloja.changeAccount(change);
+				retryMaloja();
+			}
+		},
+	}),
 	/**
 	 * Listener triggered on change of controller mode in a tab.
 	 */
@@ -566,6 +605,7 @@ async function bindScrobblers() {
  * Storage is used instead of variables, as with Manifest V3 service workers, script state cannot be guaranteed.
  */
 function onStartup() {
+	retryMaloja();
 	const state = BrowserStorage.getStorage(BrowserStorage.STATE_MANAGEMENT);
 	state.set(DEFAULT_STATE);
 	disabledTabs.set({});

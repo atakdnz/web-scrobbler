@@ -22,24 +22,17 @@ import {
 import { debugLog } from '@/util/util';
 import { sendContentMessage } from '@/util/communication';
 import { Dynamic } from 'solid-js/web';
+import MalojaScrobbler from '@/core/scrobbler/maloja/maloja-scrobbler';
+import type {
+	MalojaAccount,
+	MalojaAccountChange,
+} from '@/core/scrobbler/maloja/maloja.types';
 
 /**
  * Properties associated with each scrobbler, and the input type to use for the user to edit them.
  */
 const scrobblerPropertiesMap = {
 	ListenBrainz: {
-		userApiUrl: {
-			type: 'text',
-			title: 'accountsUserApiUrl',
-			placeholder: 'accountsUserApiUrlPlaceholder',
-		},
-		userToken: {
-			type: 'password',
-			title: 'accountsUserToken',
-			placeholder: 'accountsUserTokenPlaceholder',
-		},
-	},
-	Maloja: {
 		userApiUrl: {
 			type: 'text',
 			title: 'accountsUserApiUrl',
@@ -93,10 +86,165 @@ export default function Accounts() {
 			<ScrobblerDisplay label="Last.fm" />
 			<ScrobblerDisplay label="Libre.fm" />
 			<ScrobblerDisplay label="ListenBrainz" />
-			<ScrobblerDisplay label="Maloja" />
+			<MalojaAccounts />
 			<ScrobblerDisplay label="Webhook" />
 			<ScrobblerDisplay label="Pleroma" />
 		</>
+	);
+}
+
+function MalojaAccounts() {
+	const scrobbler = ScrobbleService.getScrobblerByLabel('Maloja');
+	const [accounts, { refetch }] = createResource(() =>
+		scrobbler instanceof MalojaScrobbler ? scrobbler.getAccounts() : [],
+	);
+	const refresh = (
+		changes: Record<string, browser.Storage.StorageChange>,
+		area: string,
+	) => {
+		if (area === 'local' && changes.Maloja) {
+			void refetch();
+		}
+	};
+	browser.storage.onChanged.addListener(refresh);
+	onCleanup(() => browser.storage.onChanged.removeListener(refresh));
+
+	return (
+		<div role="group" aria-label="Maloja">
+			<h2>Maloja</h2>
+			<p>{t('accountsMalojaEndpointHelp')}</p>
+			<Show when={accounts.error}>
+				<p role="alert">{t('accountsMalojaLoadError')}</p>
+			</Show>
+			<Show when={!accounts.error && accounts()}>
+				{(loaded) => (
+					<>
+						<For each={loaded().map(({ id }) => id)}>
+							{(id) => {
+								const account = () =>
+									loaded().find((entry) => entry.id === id);
+								return (
+									<MalojaAccountForm
+										account={account()}
+										pending={account()?.pending}
+									/>
+								);
+							}}
+						</For>
+						<MalojaAccountForm />
+					</>
+				)}
+			</Show>
+		</div>
+	);
+}
+
+function MalojaAccountForm(props: {
+	account?: MalojaAccount;
+	pending?: number;
+}) {
+	const [busy, setBusy] = createSignal(false);
+	const [error, setError] = createSignal(false);
+	const savedUrl = createMemo(() => props.account?.userApiUrl ?? '');
+	const savedKey = createMemo(() => props.account?.userToken ?? '');
+	let urlInput!: HTMLInputElement;
+	let keyInput!: HTMLInputElement;
+
+	const change = async (payload: MalojaAccountChange) => {
+		setBusy(true);
+		setError(false);
+		try {
+			await sendContentMessage({ type: 'changeMalojaAccount', payload });
+			if (!props.account) {
+				urlInput.value = '';
+				keyInput.value = '';
+			}
+		} catch {
+			setError(true);
+		} finally {
+			setBusy(false);
+		}
+	};
+
+	const confirmDiscard = () =>
+		!props.pending || window.confirm(t('accountsMalojaDiscardPending'));
+
+	return (
+		<form
+			onSubmit={(event) => {
+				event.preventDefault();
+				const userApiUrl = urlInput.value.trim();
+				if (
+					props.account &&
+					new URL(userApiUrl).href !== props.account.userApiUrl &&
+					!confirmDiscard()
+				) {
+					return;
+				}
+				void change({
+					id: props.account?.id,
+					userApiUrl,
+					userToken: keyInput.value,
+				});
+			}}
+		>
+			<label class={styles.propLabel}>
+				{t('accountsUserApiUrl')}
+				<input
+					ref={urlInput}
+					class={styles.propInput}
+					type="url"
+					required
+					value={savedUrl()}
+					placeholder="https://maloja.example/apis/mlj_1/newscrobble"
+				/>
+			</label>
+			<label class={styles.propLabel}>
+				{t('accountsMalojaApiKey')}
+				<input
+					ref={keyInput}
+					class={styles.propInput}
+					type="password"
+					required
+					value={savedKey()}
+					autocomplete="off"
+				/>
+			</label>
+			<Show when={props.account}>
+				<p>{t('accountsMalojaPending', String(props.pending ?? 0))}</p>
+			</Show>
+			<Show when={error()}>
+				<p role="alert">{t('accountsMalojaSaveError')}</p>
+			</Show>
+			<div class={styles.buttonContainer}>
+				<button class={styles.button} type="submit" disabled={busy()}>
+					{t(
+						props.account
+							? 'accountsMalojaSave'
+							: 'accountsMalojaAdd',
+					)}
+				</button>
+				<Show when={props.account}>
+					{(account) => (
+						<button
+							class={styles.button}
+							type="button"
+							disabled={busy()}
+							onClick={() => {
+								if (confirmDiscard()) {
+									void change({
+										id: account().id,
+										remove: true,
+									});
+								}
+							}}
+						>
+							{t('accountsMalojaRemove')}
+						</button>
+					)}
+				</Show>
+			</div>
+		</form>
 	);
 }
 

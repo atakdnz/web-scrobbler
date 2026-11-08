@@ -1309,14 +1309,16 @@ export default class Controller {
 			},
 		});
 
-		if (isAnyResult(results[0], ServiceCallResult.RESULT_OK)) {
+		if (isAnyResult(results[0] ?? [], ServiceCallResult.RESULT_OK)) {
 			this.debugLog('Scrobbled successfully');
 
 			this.currentSong.flags.isScrobbled = true;
 			this.setMode(ControllerMode.Scrobbled);
 
 			this.onSongUpdated();
-		} else if (areAllResults(results[0], ServiceCallResult.RESULT_IGNORE)) {
+		} else if (
+			areAllResults(results[0] ?? [], ServiceCallResult.RESULT_IGNORE)
+		) {
 			this.debugLog('Song is ignored by service');
 			this.setMode(ControllerMode.Ignored);
 		} else {

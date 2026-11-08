@@ -4,6 +4,7 @@ import type { ControllerModeStr } from '@/core/object/controller/controller';
 import type { ServiceCallResult } from '@/core/object/service-call-result';
 import type { CloneableSong } from '@/core/object/song';
 import type { ScrobblerSongInfo } from '@/core/scrobbler/base-scrobbler';
+import type { MalojaAccountChange } from '@/core/scrobbler/maloja/maloja.types';
 import type { ManagerTab } from '@/core/storage/wrapper';
 import browser from 'webextension-polyfill';
 
@@ -103,6 +104,10 @@ interface ContentCommunications {
 			url: string;
 		};
 		response: string | null;
+	};
+	changeMalojaAccount: {
+		payload: MalojaAccountChange;
+		response: void;
 	};
 	updateScrobblerProperties: {
 		payload: undefined;
